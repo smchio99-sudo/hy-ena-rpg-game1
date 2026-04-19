@@ -140,69 +140,82 @@ self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).catch(()=>n
 <title>HY-ENA 전자공학부 물리치기</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-
-html, body {
-  width:100%; height:100%;
-  overflow:hidden;
-}
 body {
   background:#111;
-  touch-action:none;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  height:100vh;
   font-family:'Malgun Gothic',sans-serif;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  position:fixed;
-  top:0; left:0; right:0; bottom:0;
+  overflow:hidden;
+  touch-action:none;
 }
-
+#wrapper {
+  position:relative;
+  width:800px;
+  height:450px;
+  transform-origin:center center;
+}
+canvas {
+  display:block;
+  width:800px;
+  height:450px;
+  border:2px solid #4a90e2;
+  box-shadow:0 0 30px #4a90e260;
+  touch-action:none;
+}
 #rotate-msg {
   display:none;
-  position:fixed; top:0; left:0; width:100%; height:100%;
+  position:fixed; top:0; left:0; width:100vw; height:100vh;
   background:#000; color:#fff;
   flex-direction:column; align-items:center; justify-content:center;
   font-size:18px; text-align:center; z-index:9999;
   font-family:'Malgun Gothic',sans-serif;
 }
 #rotate-msg .icon { font-size:64px; margin-bottom:16px; animation:rotHint 1.5s ease-in-out infinite; }
-@keyframes rotHint {
-  0%,100% { transform:rotate(0deg); }
-  50%      { transform:rotate(90deg); }
+@keyframes rotHint { 0%,100%{ transform:rotate(0deg); } 50%{ transform:rotate(90deg); } }
+@media (orientation:portrait) { #rotate-msg { display:flex; } }
+#hud {
+  position:absolute; top:0; left:0; width:100%; pointer-events:none;
+  display:flex; justify-content:space-between; align-items:flex-start; padding:8px 10px;
 }
-@media (orientation: portrait) {
-  #rotate-msg { display:flex; }
+#timerHud { position:absolute !important; left:50%; transform:translateX(-50%); top:8px; }
+#coinHud { margin-right:54px; }
+#killHud { margin-right:4px; }
+.hudBox { background:rgba(0,0,0,0.75); border:1px solid #555; border-radius:5px; padding:5px 10px; color:#fff; font-size:12px; font-weight:bold; }
+#bossHud {
+  position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.85); border:2px solid #9b59b6; border-radius:6px;
+  padding:6px 14px; color:#fff; font-size:12px; font-weight:bold;
+  text-align:center; display:none; min-width:220px;
 }
-
-#wrapper {
-  position:relative;
-  width: var(--game-w, 100vw);
-  height: var(--game-h, 56.25vw);
-  flex-shrink:0;
-  overflow:hidden;
+.barWrap { width:140px; height:8px; background:#333; border-radius:4px; margin-top:3px; overflow:hidden; }
+.barFill { height:100%; border-radius:4px; transition:width 0.15s; }
+#overlay {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.88); display:flex; flex-direction:column;
+  align-items:center; justify-content:center; color:#fff; z-index:20; border-radius:2px;
+  overflow-y:auto; box-sizing:border-box; padding:8px 4px;
 }
-canvas {
-  width:100% !important;
-  height:100% !important;
-  display:block;
+#overlay h1 { font-size:28px; color:#f1c40f; text-shadow:0 0 18px #f1c40f80; margin-bottom:8px; text-align:center; }
+#overlay p { font-size:13px; color:#aaa; margin:3px 0; text-align:center; }
+.keyHint { display:inline-block; background:#222; border:1px solid #666; border-radius:3px; padding:1px 6px; color:#eee; font-size:11px; }
+/* startBtn styled inline */
+:fullscreen #wrapper, :-webkit-full-screen #wrapper { width:100vw !important; height:100vh !important; }
+@media (orientation:landscape) {
+  .hudBox { font-size:10px !important; padding:3px 7px !important; }
+  #timerHud { font-size:10px !important; }
 }
-@media (orientation: landscape) {
-  .hudBox { font-size: 10px !important; padding: 3px 7px !important; }
-  #timerHud { font-size: 10px !important; }
-}
-@media (orientation: landscape) and (max-height: 420px) {
+@media (orientation:landscape) and (max-height:420px) {
   #overlay { justify-content:flex-start; padding-top:4px; overflow-y:auto; }
   #overlay p { font-size:10px; margin:1px 0; }
-  #overlay .bgm-warn { font-size:10px !important; padding:2px 8px !important; margin-top:3px !important; }
-  #overlay .made-by  { font-size:9px !important; margin-top:3px !important; }
-  #startBtn { margin-top:4px; width:130px; padding:7px 0; font-size:12px; }
   #titleLogoImg { width:210px !important; margin-bottom:2px !important; }
+  #startBtn { margin-top:4px; width:130px; padding:7px 0; font-size:12px; }
 }
-@media (orientation: landscape) and (max-height: 320px) {
+@media (orientation:landscape) and (max-height:320px) {
   #overlay p { font-size:9px; margin:0; }
   #titleLogoImg { width:160px !important; margin-bottom:1px !important; }
   #startBtn { width:120px; padding:5px 0; font-size:11px; margin-top:3px; }
 }
-
 #joystick-zone {
   position:absolute;
   bottom:10px; left:10px;
@@ -249,7 +262,7 @@ canvas {
   -webkit-backdrop-filter:blur(3px);
   letter-spacing:0;
 }
-canvas { display:block; border:2px solid #4a90e2; box-shadow:0 0 30px #4a90e260; touch-action:none; }
+canvas { display:block; width:100% !important; height:100% !important; border:2px solid #4a90e2; box-shadow:0 0 30px #4a90e260; touch-action:none; }
 #hud {
   position:absolute; top:0; left:0; width:100%; pointer-events:none;
   display:flex; justify-content:space-between; align-items:flex-start; padding:8px 10px;
@@ -307,6 +320,10 @@ canvas { display:block; border:2px solid #4a90e2; box-shadow:0 0 30px #4a90e260;
   #titleLogoImg { width:160px !important; margin-bottom:1px !important; }
   #startBtn { width:120px; padding:5px 0; font-size:11px; margin-top:3px; }
 }
+
+
+
+
 
 </style>
 </head>
@@ -577,29 +594,16 @@ function enterFullscreen(){
 // F11 또는 F키로 전체화면 토글
 // 게임 화면 크기 동적 계산 (모바일 대응)
 function resizeGame(){
-  // screen.width/height 대신 window.innerWidth/Height 사용
-  // 주소창, 상태바 등 UI 제외한 실제 보이는 영역
+  const wrapper = document.getElementById('wrapper');
+  if(!wrapper) return;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  let gw, gh;
-  const ratio = 16 / 9;
-  if(vw / vh >= ratio){
-    gh = vh;
-    gw = Math.floor(gh * ratio);
-  } else {
-    gw = vw;
-    gh = Math.floor(gw / ratio);
-  }
-  const root = document.documentElement;
-  root.style.setProperty('--game-w', gw + 'px');
-  root.style.setProperty('--game-h', gh + 'px');
+  const scale = Math.min(vw/800, vh/450);
+  wrapper.style.transform = 'scale(' + scale + ')';
 }
 resizeGame();
 window.addEventListener('resize', resizeGame);
-window.addEventListener('orientationchange', function(){
-  setTimeout(resizeGame, 200);
-  setTimeout(resizeGame, 500);  // 한번 더 (일부 기기 대응)
-});
+window.addEventListener('orientationchange', function(){ setTimeout(resizeGame,200); });
 
 // 이스터에그 버퍼
 let _easterBuf = '';
