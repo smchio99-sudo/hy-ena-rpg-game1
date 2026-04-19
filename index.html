@@ -61,6 +61,37 @@
       return [];
     }
   };
+
+  // ── 접속 기록 ─────────────────────────────────────────────
+  window._fbLogVisit = async function() {
+    if(!_fbDB) return;
+    try {
+      const now = new Date();
+      const kst = new Date(now.getTime() + 9*60*60*1000);
+      const dateKey = kst.toISOString().slice(0,10);
+      const timeStr = kst.toISOString().slice(11,19);
+      const ua = navigator.userAgent;
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+      const device = /iPad|Tablet/i.test(ua) ? 'tablet' : isMobile ? 'mobile' : 'PC';
+      const os = /Windows/i.test(ua) ? 'Windows'
+               : /Mac/i.test(ua)     ? 'Mac'
+               : /Android/i.test(ua) ? 'Android'
+               : /iPhone|iPad/i.test(ua) ? 'iOS' : 'Other';
+      await _fbDB.ref('visits/' + dateKey).push({ time: timeStr, device, os, ts: Date.now() });
+      console.log('📍 접속 기록:', dateKey, timeStr, device, os);
+    } catch(e) { console.warn('접속 기록 실패:', e.message); }
+  };
+
+  window._fbGetVisits = async function() {
+    if(!_fbDB) return {};
+    try {
+      const snap = await _fbDB.ref('visits').get();
+      return snap.exists() ? snap.val() : {};
+    } catch(e) { return {}; }
+  };
+
+  // 접속 즉시 기록 (1초 딜레이로 Firebase 초기화 완료 후)
+  setTimeout(function(){ if(window._fbLogVisit) window._fbLogVisit(); }, 1500);
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
 <meta name="mobile-web-app-capable" content="yes">
@@ -383,6 +414,17 @@ function playGameBGM(){
     if(gbgm){ gbgm.volume=0.3; gbgm.currentTime=0; gbgm.play().catch(()=>{}); }
   }
 }
+function resumeCurrentBGM(){
+  // gameMode에 따라 올바른 BGM만 재개
+  if(gameMode === 'challenge'){
+    const c = document.getElementById('challenge-bgm');
+    if(c && c.paused) c.play().catch(()=>{});
+  } else if(gameMode === 'normal' && phase !== 'idle'){
+    const g = document.getElementById('bgm');
+    if(g && g.paused) g.play().catch(()=>{});
+  }
+}
+
 function stopAllBGM(){
   ['title-bgm','bgm'].forEach(id=>{
     const a=document.getElementById(id);
@@ -1501,9 +1543,9 @@ function togglePause(){
   document.getElementById('pauseBtn').textContent = paused ? '▶' : '⏸';
   document.getElementById('pauseModal').style.display = paused ? 'block' : 'none';
   if(paused){
-    const bgm=document.getElementById('bgm'); if(bgm) bgm.pause();
+    ['bgm','challenge-bgm','title-bgm'].forEach(id=>{ const a=document.getElementById(id); if(a)a.pause(); });
   } else {
-    const bgm=document.getElementById('bgm'); if(bgm) bgm.play();
+    resumeCurrentBGM();
     prevT = performance.now();
   }
 }
@@ -1512,8 +1554,7 @@ function resumeGame(){
   paused = false;
   document.getElementById('pauseBtn').textContent = '⏸';
   document.getElementById('pauseModal').style.display = 'none';
-  // 일시정지 해제 시 현재 게임 BGM 재개
-  const _bgm=document.getElementById('bgm'); if(_bgm && _bgm.paused) _bgm.play().catch(()=>{});
+  resumeCurrentBGM();  // 현재 모드의 BGM 재개
   prevT = performance.now();
 }
 
