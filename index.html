@@ -104,7 +104,7 @@ const SLASH_HANBOK_IMG = (function(){const i=new Image();i.src="data:image/png;b
   // 접속 즉시 기록 (1초 딜레이로 Firebase 초기화 완료 후)
   setTimeout(function(){ if(window._fbLogVisit) window._fbLogVisit(); }, 1500);
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -149,9 +149,13 @@ body {
   font-family:'Malgun Gothic',sans-serif;
   overflow:hidden; touch-action:none;
 }
-html {
-  width:100%; height:100%;
-  overflow:hidden;
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #111;
 }
 
 /* ── 세로 모드 진입 시 90도 회전 안내 ── */
@@ -172,19 +176,18 @@ html {
   #rotate-msg { display:flex; }
 }
 #wrapper {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width:  var(--game-w, 100vw);
   height: var(--game-h, 56.25vw);
-  max-width: none;
-  margin: auto;
-  flex-shrink: 0;
 }
 canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
 }
-/* 모바일 가로 모드 - JS로 처리 */
 @media (orientation: landscape) {
   #wrapper {
     width:  var(--game-w, 100vw);
@@ -573,20 +576,29 @@ function enterFullscreen(){
 // F11 또는 F키로 전체화면 토글
 // 게임 화면 크기 동적 계산 (모바일 대응)
 function resizeGame(){
+  // screen.width/height 대신 window.innerWidth/Height 사용
+  // 주소창, 상태바 등 UI 제외한 실제 보이는 영역
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   let gw, gh;
-  if(vw / vh > 16/9){
-    gh = vh; gw = gh * 16 / 9;
+  const ratio = 16 / 9;
+  if(vw / vh >= ratio){
+    gh = vh;
+    gw = Math.floor(gh * ratio);
   } else {
-    gw = vw; gh = gw * 9 / 16;
+    gw = vw;
+    gh = Math.floor(gw / ratio);
   }
-  document.documentElement.style.setProperty('--game-w', gw + 'px');
-  document.documentElement.style.setProperty('--game-h', gh + 'px');
+  const root = document.documentElement;
+  root.style.setProperty('--game-w', gw + 'px');
+  root.style.setProperty('--game-h', gh + 'px');
 }
 resizeGame();
 window.addEventListener('resize', resizeGame);
-window.addEventListener('orientationchange', function(){ setTimeout(resizeGame, 150); });
+window.addEventListener('orientationchange', function(){
+  setTimeout(resizeGame, 200);
+  setTimeout(resizeGame, 500);  // 한번 더 (일부 기기 대응)
+});
 
 // 이스터에그 버퍼
 let _easterBuf = '';
